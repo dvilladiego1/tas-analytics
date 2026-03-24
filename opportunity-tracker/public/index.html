@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de Oportunidades — Grupo Plasencia</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; }
+
+/* Header */
+.header { background: #1A1A2E; color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header .subtitle { font-size: 13px; color: #9ca3af; }
+.role-badge { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.role-kavak { background: #004E98; color: white; }
+.role-plasencia { background: #22C55E; color: white; }
+
+/* Upload zone */
+.upload-zone { margin: 20px 24px; padding: 32px; border: 2px dashed #d1d5db; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; background: white; }
+.upload-zone:hover, .upload-zone.dragover { border-color: #004E98; background: #eff6ff; }
+.upload-zone input { display: none; }
+.upload-zone p { color: #6b7280; margin-top: 8px; font-size: 14px; }
+.upload-zone .icon { font-size: 36px; color: #9ca3af; }
+
+/* Filters */
+.filters { display: flex; gap: 12px; padding: 0 24px; margin-bottom: 16px; flex-wrap: wrap; }
+.filters input, .filters select { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white; }
+.filters input { flex: 1; min-width: 200px; }
+
+/* Table */
+.table-wrap { margin: 0 24px 24px; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
+thead { background: #2B478B; color: white; position: sticky; top: 0; }
+th { padding: 12px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+tr:hover { background: #f0f4ff; cursor: pointer; }
+tr.selected { background: #dbeafe; }
+
+/* Status chips */
+.chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.chip-proceso { background: #fef3c7; color: #92400e; }
+.chip-completado { background: #dcfce7; color: #166534; }
+.chip-rechazado { background: #fee2e2; color: #991b1b; }
+.chip-pendiente { background: #f3f4f6; color: #6b7280; }
+.chip-pago { background: #dbeafe; color: #1e40af; }
+.chip-confirmacion { background: #f3e8ff; color: #6b21a8; }
+.chip-aprobacion { background: #fef3c7; color: #92400e; }
+.chip-oferta { background: #e0f2fe; color: #0369a1; }
+
+/* Aging badges */
+.aging-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.aging-green { background: #dcfce7; color: #166534; }
+.aging-amber { background: #fef3c7; color: #92400e; }
+.aging-red { background: #fee2e2; color: #991b1b; animation: pulse-red 2s infinite; }
+@keyframes pulse-red { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+/* Feedback panel */
+.overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; }
+.overlay.open { display: block; }
+.panel { position: fixed; top: 0; right: 0; width: 520px; max-width: 100%; height: 100%; background: white; z-index: 101; box-shadow: -4px 0 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s ease; }
+.panel.open { transform: translateX(0); }
+.panel-header { padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: flex-start; }
+.panel-header h2 { font-size: 18px; color: #1A1A2E; }
+.panel-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 4px; }
+.panel-info { padding: 16px 20px; border-bottom: 1px solid #e5e7eb; font-size: 13px; color: #4b5563; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.panel-info .label { font-weight: 600; color: #1f2937; }
+.panel-status { padding: 12px 20px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px; }
+.panel-status label { font-weight: 600; font-size: 13px; }
+.panel-status select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+
+/* Documents section */
+.docs-section { padding: 16px 20px; border-bottom: 1px solid #e5e7eb; max-height: 280px; overflow-y: auto; }
+.docs-section h3 { font-size: 14px; font-weight: 700; color: #1A1A2E; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.docs-section h3 .doc-icon { font-size: 16px; }
+.docs-group { margin-bottom: 14px; }
+.docs-group-title { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+.doc-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+.doc-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #22C55E; cursor: pointer; flex-shrink: 0; }
+.doc-row label { cursor: pointer; flex: 1; }
+.doc-row label.checked { text-decoration: line-through; color: #9ca3af; }
+.doc-progress { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: #6b7280; }
+.doc-progress-bar { flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+.doc-progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.doc-progress-fill.complete { background: #22C55E; }
+.doc-progress-fill.partial { background: #F59E0B; }
+.doc-progress-fill.empty { background: #e5e7eb; }
+
+/* Aging alert in panel */
+.panel-aging { padding: 10px 20px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; }
+.panel-aging-badge { padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; }
+.panel-aging-text { font-size: 12px; color: #6b7280; }
+
+/* Comments */
+.comments { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.comment { padding: 12px; border-radius: 10px; font-size: 13px; }
+.comment.kavak { background: #eff6ff; border-left: 3px solid #004E98; }
+.comment.plasencia { background: #f0fdf4; border-left: 3px solid #22C55E; }
+.comment-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; display: flex; justify-content: space-between; }
+.comment-role { font-weight: 700; text-transform: uppercase; }
+.comment-role.kavak { color: #004E98; }
+.comment-role.plasencia { color: #16a34a; }
+.comment-text { line-height: 1.5; }
+
+/* Comment input */
+.comment-input { padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; }
+.comment-input input { flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+.comment-input button { padding: 10px 20px; background: #004E98; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.comment-input button:hover { background: #003d7a; }
+
+/* Counter */
+.counter { padding: 8px 24px; font-size: 13px; color: #6b7280; }
+.counter strong { color: #1f2937; }
+
+/* Feedback count badge */
+.fb-count { display: inline-flex; align-items: center; justify-content: center; background: #004E98; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; font-weight: 700; }
+
+/* Empty state */
+.empty { text-align: center; padding: 60px 24px; color: #9ca3af; }
+.empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 24px; background: #1A1A2E; color: white; border-radius: 8px; font-size: 14px; z-index: 200; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* Alert summary bar */
+.alert-bar { margin: 0 24px 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+.alert-card { padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.alert-card .count { font-size: 20px; font-weight: 800; }
+.alert-card.green { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.alert-card.amber { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.alert-card.red { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+@media (max-width: 640px) {
+  .header { padding: 12px 16px; }
+  .header h1 { font-size: 16px; }
+  .upload-zone { margin: 12px 16px; padding: 20px; }
+  .filters { padding: 0 16px; }
+  .table-wrap { margin: 0 16px 16px; }
+  .panel { width: 100%; }
+  .counter { padding: 8px 16px; }
+  .alert-bar { margin: 0 16px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Seguimiento de Oportunidades</h1>
+    <div class="subtitle">Grupo Plasencia &times; Kavak</div>
+  </div>
+  <span id="roleBadge" class="role-badge"></span>
+</div>
+
+<div id="uploadZone" class="upload-zone" style="display:none">
+  <div class="icon">&#128194;</div>
+  <p><strong>Arrastra tu CSV aquí</strong> o haz clic para seleccionar</p>
+  <p style="font-size:12px;color:#9ca3af;margin-top:4px;">Formato: CSV de oportunidades activas</p>
+  <input type="file" id="csvInput" accept=".csv">
+</div>
+
+<div id="mainContent" style="display:none">
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Buscar por prospecto, marca, modelo, VIN...">
+    <select id="filterEtapa"><option value="">Todas las etapas</option></select>
+    <select id="filterEstatus"><option value="">Todos los estatus</option></select>
+    <select id="filterAgencia"><option value="">Todas las agencias</option></select>
+  </div>
+  <div class="alert-bar" id="alertBar"></div>
+  <div class="counter" id="counter"></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Prospecto</th>
+          <th>Marca / Modelo</th>
+          <th>Año</th>
+          <th>Etapa</th>
+          <th>Agencia</th>
+          <th>Oferta Final</th>
+          <th>Estatus</th>
+          <th>Alerta</th>
+          <th>Docs</th>
+          <th>&#128172;</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="emptyState" class="empty" style="display:none">
+  <div class="icon">&#128203;</div>
+  <p>No hay oportunidades cargadas aún.</p>
+  <p style="margin-top:8px;font-size:13px;">El administrador debe subir el CSV primero.</p>
+</div>
+
+<!-- Feedback panel -->
+<div class="overlay" id="overlay"></div>
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <div>
+      <h2 id="panelTitle"></h2>
+      <div id="panelSubtitle" style="font-size:13px;color:#6b7280;margin-top:4px;"></div>
+    </div>
+    <button class="panel-close" id="panelClose">&times;</button>
+  </div>
+  <div class="panel-info" id="panelInfo"></div>
+  <div class="panel-aging" id="panelAging" style="display:none"></div>
+  <div class="panel-status" id="panelStatusBar">
+    <label>Estatus:</label>
+    <select id="panelStatus">
+      <option>En proceso</option>
+      <option>Completado</option>
+      <option>Rechazado</option>
+      <option>Pendiente info</option>
+      <option>Pago</option>
+    </select>
+  </div>
+  <div class="docs-section" id="docsSection" style="display:none"></div>
+  <div class="comments" id="commentsArea">
+    <div style="text-align:center;color:#9ca3af;padding:40px 0;">Sin comentarios aún</div>
+  </div>
+  <div class="comment-input">
+    <input type="text" id="commentInput" placeholder="Escribe tu comentario...">
+    <button id="commentBtn">Enviar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const ROLE = params.get('role') === 'plasencia' ? 'plasencia' : 'kavak';
+let opportunities = [];
+let feedback = {};
+let documents = {};
+let selectedOpp = null;
+
+// Document definitions
+const DOCS_PAGO1 = [
+  'Factura original',
+  'INE/IFE vigente',
+  'Comprobante de domicilio',
+  'RFC (Constancia de situación fiscal)',
+  'CURP',
+  'Carátula bancaria (CLABE)',
+  'Tenencias pagadas',
+  'Verificación vigente',
+  'Póliza de seguro'
+];
+const DOCS_PAGO2 = [
+  'Factura endosada',
+  'Carta poder notariada',
+  'Contrato de compraventa firmado',
+  'Comprobante de transferencia 1er pago',
+  'Baja de placas'
+];
+
+// Init
+document.getElementById('roleBadge').textContent = ROLE === 'kavak' ? 'Kavak' : 'Plasencia';
+document.getElementById('roleBadge').classList.add('role-' + ROLE);
+
+if (ROLE === 'kavak') {
+  document.getElementById('uploadZone').style.display = 'block';
+} else {
+  document.getElementById('panelStatus').disabled = true;
+}
+
+// Upload CSV
+const uploadZone = document.getElementById('uploadZone');
+const csvInput = document.getElementById('csvInput');
+
+uploadZone.addEventListener('click', () => csvInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) uploadCSV(e.dataTransfer.files[0]);
+});
+csvInput.addEventListener('change', () => { if (csvInput.files[0]) uploadCSV(csvInput.files[0]); });
+
+async function uploadCSV(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const json = await res.json();
+    if (json.ok) {
+      showToast(`${json.count} oportunidades cargadas`);
+      loadData();
+    } else {
+      showToast('Error: ' + (json.error || 'Upload failed'));
+    }
+  } catch (err) {
+    showToast('Error de conexión');
+  }
+}
+
+// Load data
+async function loadData() {
+  try {
+    const res = await fetch('/api/opportunities');
+    const data = await res.json();
+    opportunities = data.opportunities || [];
+    feedback = data.feedback || {};
+    documents = data.documents || {};
+    if (opportunities.length > 0) {
+      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+      populateFilters();
+      renderAlertBar();
+      renderTable();
+    } else {
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function populateFilters() {
+  const etapas = [...new Set(opportunities.map(o => o.etapa))].sort();
+  const estatuses = [...new Set(opportunities.map(o => o.estatus))].sort();
+  const agencias = [...new Set(opportunities.map(o => o.agencia))].sort();
+  fillSelect('filterEtapa', etapas, 'Todas las etapas');
+  fillSelect('filterEstatus', estatuses, 'Todos los estatus');
+  fillSelect('filterAgencia', agencias, 'Todas las agencias');
+}
+
+function fillSelect(id, items, defaultLabel) {
+  const sel = document.getElementById(id);
+  const val = sel.value;
+  sel.innerHTML = `<option value="">${defaultLabel}</option>` + items.map(i => `<option>${i}</option>`).join('');
+  sel.value = val;
+}
+
+// Date parsing (dd/mm/yyyy)
+function parseDate(str) {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length !== 3) return null;
+  const d = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1;
+  const y = parseInt(parts[2], 10);
+  return new Date(y, m, d);
+}
+
+function getDaysAging(dateStr) {
+  const d = parseDate(dateStr);
+  if (!d) return null;
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+}
+
+function getAgingInfo(days) {
+  if (days === null) return null;
+  if (days <= 1) return { cls: 'aging-green', label: `${days}d`, icon: '' };
+  if (days <= 4) return { cls: 'aging-amber', label: `${days}d`, icon: '' };
+  return { cls: 'aging-red', label: `${days}d`, icon: '' };
+}
+
+function getChipClass(etapa) {
+  const s = (etapa || '').toLowerCase();
+  if (s.includes('confirmaci')) return 'chip-confirmacion';
+  if (s.includes('aprobaci')) return 'chip-aprobacion';
+  if (s.includes('pago')) return 'chip-pago';
+  if (s.includes('oferta')) return 'chip-oferta';
+  return 'chip-pendiente';
+}
+
+function getStatusChipClass(estatus) {
+  const s = (estatus || '').toLowerCase();
+  if (s.includes('proceso')) return 'chip-proceso';
+  if (s.includes('completado')) return 'chip-completado';
+  if (s.includes('rechazado')) return 'chip-rechazado';
+  if (s.includes('pago')) return 'chip-pago';
+  return 'chip-pendiente';
+}
+
+// Document progress for a given opportunity
+function getDocProgress(oppId) {
+  const d = documents[oppId];
+  if (!d) return { pago1: 0, pago1Total: DOCS_PAGO1.length, pago2: 0, pago2Total: DOCS_PAGO2.length };
+  const p1 = DOCS_PAGO1.filter(doc => d.pago1 && d.pago1[doc]).length;
+  const p2 = DOCS_PAGO2.filter(doc => d.pago2 && d.pago2[doc]).length;
+  return { pago1: p1, pago1Total: DOCS_PAGO1.length, pago2: p2, pago2Total: DOCS_PAGO2.length };
+}
+
+// Alert bar for Aprobación aging
+function renderAlertBar() {
+  const aprobacion = opportunities.filter(o => (o.etapa || '').toLowerCase().includes('aprobaci'));
+  if (aprobacion.length === 0) {
+    document.getElementById('alertBar').innerHTML = '';
+    return;
+  }
+
+  let green = 0, amber = 0, red = 0;
+  aprobacion.forEach(o => {
+    const days = getDaysAging(o.fechaInspeccion);
+    if (days === null) return;
+    if (days <= 1) green++;
+    else if (days <= 4) amber++;
+    else red++;
+  });
+
+  document.getElementById('alertBar').innerHTML = `
+    <div class="alert-card green"><span class="count">${green}</span> Aprobación ≤1 día</div>
+    <div class="alert-card amber"><span class="count">${amber}</span> Aprobación 2-4 días</div>
+    <div class="alert-card red"><span class="count">${red}</span> Aprobación >4 días</div>
+  `;
+}
+
+function renderTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const etapa = document.getElementById('filterEtapa').value;
+  const estatus = document.getElementById('filterEstatus').value;
+  const agencia = document.getElementById('filterAgencia').value;
+
+  const filtered = opportunities.filter(o => {
+    if (etapa && o.etapa !== etapa) return false;
+    if (estatus && o.estatus !== estatus) return false;
+    if (agencia && o.agencia !== agencia) return false;
+    if (search) {
+      const hay = [o.prospecto, o.marca, o.modelo, o.vin, o.agencia, o.asesor].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('counter').innerHTML = `Mostrando <strong>${filtered.length}</strong> de <strong>${opportunities.length}</strong> oportunidades`;
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = filtered.map((o, i) => {
+    const fbCount = (feedback[o.id] || []).length;
+    const isAprobacion = (o.etapa || '').toLowerCase().includes('aprobaci');
+    const isConfirmacion = (o.etapa || '').toLowerCase().includes('confirmaci');
+    const days = getDaysAging(o.fechaInspeccion);
+    const aging = isAprobacion ? getAgingInfo(days) : null;
+
+    // Doc progress for confirmación
+    let docCell = '-';
+    if (isConfirmacion) {
+      const prog = getDocProgress(o.id);
+      const pct = Math.round((prog.pago1 / prog.pago1Total) * 100);
+      const color = pct === 100 ? '#22C55E' : pct > 0 ? '#F59E0B' : '#e5e7eb';
+      docCell = `<div style="display:flex;align-items:center;gap:4px;" title="1er Pago: ${prog.pago1}/${prog.pago1Total}">
+        <div style="width:40px;height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;"></div>
+        </div>
+        <span style="font-size:10px;color:#6b7280;">${prog.pago1}/${prog.pago1Total}</span>
+      </div>`;
+    }
+
+    return `<tr data-id="${o.id}" class="${selectedOpp && selectedOpp.id === o.id ? 'selected' : ''}" onclick="openPanel('${o.id}')">
+      <td>${i + 1}</td>
+      <td><strong>${esc(o.prospecto)}</strong></td>
+      <td>${esc(o.marca)} ${esc(o.modelo)}</td>
+      <td>${esc(o.ano)}</td>
+      <td><span class="chip ${getChipClass(o.etapa)}">${esc(o.etapa)}</span></td>
+      <td>${esc(o.agencia)}</td>
+      <td style="text-align:right">${esc(o.ofertaFinal)}</td>
+      <td><span class="chip ${getStatusChipClass(o.estatus)}">${esc(o.estatus)}</span></td>
+      <td>${aging ? `<span class="aging-badge ${aging.cls}">${aging.icon} ${aging.label}</span>` : (isAprobacion ? '<span style="color:#9ca3af;font-size:11px;">-</span>' : '-')}</td>
+      <td>${docCell}</td>
+      <td>${fbCount > 0 ? `<span class="fb-count">${fbCount}</span>` : '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+// Filters
+document.getElementById('searchInput').addEventListener('input', renderTable);
+document.getElementById('filterEtapa').addEventListener('change', renderTable);
+document.getElementById('filterEstatus').addEventListener('change', renderTable);
+document.getElementById('filterAgencia').addEventListener('change', renderTable);
+
+// Panel
+function openPanel(id) {
+  selectedOpp = opportunities.find(o => o.id === id);
+  if (!selectedOpp) return;
+
+  document.getElementById('panelTitle').textContent = selectedOpp.prospecto;
+  document.getElementById('panelSubtitle').textContent = `${selectedOpp.marca} ${selectedOpp.modelo} ${selectedOpp.ano}`;
+  document.getElementById('panelInfo').innerHTML = `
+    <div><span class="label">VIN:</span> ${esc(selectedOpp.vin)}</div>
+    <div><span class="label">Etapa:</span> ${esc(selectedOpp.etapa)}</div>
+    <div><span class="label">Agencia:</span> ${esc(selectedOpp.agencia)}</div>
+    <div><span class="label">Fecha Insp.:</span> ${esc(selectedOpp.fechaInspeccion)}</div>
+    <div><span class="label">Oferta Inicial:</span> $${esc(selectedOpp.ofertaInicial)}</div>
+    <div><span class="label">Oferta Final:</span> $${esc(selectedOpp.ofertaFinal)}</div>
+    <div><span class="label">Comisión:</span> ${esc(selectedOpp.pctComision)} ($${esc(selectedOpp.montoComision)})</div>
+    <div><span class="label">Asesor:</span> ${esc(selectedOpp.asesor)}</div>
+  `;
+  document.getElementById('panelStatus').value = selectedOpp.estatus;
+
+  // Aging alert for Aprobación
+  const isAprobacion = (selectedOpp.etapa || '').toLowerCase().includes('aprobaci');
+  const agingDiv = document.getElementById('panelAging');
+  if (isAprobacion) {
+    const days = getDaysAging(selectedOpp.fechaInspeccion);
+    const info = getAgingInfo(days);
+    if (info) {
+      let msg = '';
+      if (days <= 1) msg = 'Dentro del tiempo esperado';
+      else if (days <= 4) msg = 'Requiere seguimiento — riesgo de caerse';
+      else msg = 'ALERTA ALTA — Acción inmediata requerida';
+      agingDiv.innerHTML = `
+        <span class="panel-aging-badge ${info.cls}">${info.icon} ${days} día${days !== 1 ? 's' : ''} en Aprobación</span>
+        <span class="panel-aging-text">${msg}</span>
+      `;
+      agingDiv.style.display = 'flex';
+    } else {
+      agingDiv.style.display = 'none';
+    }
+  } else {
+    agingDiv.style.display = 'none';
+  }
+
+  // Documents for Confirmación
+  const isConfirmacion = (selectedOpp.etapa || '').toLowerCase().includes('confirmaci');
+  const docsDiv = document.getElementById('docsSection');
+  if (isConfirmacion) {
+    renderDocuments();
+    docsDiv.style.display = 'block';
+  } else {
+    docsDiv.style.display = 'none';
+  }
+
+  renderComments();
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+  renderTable();
+}
+
+function renderDocuments() {
+  const docsDiv = document.getElementById('docsSection');
+  const oppDocs = documents[selectedOpp.id] || { pago1: {}, pago2: {}, requierePago2: false };
+
+  const p1Checked = DOCS_PAGO1.filter(d => oppDocs.pago1 && oppDocs.pago1[d]).length;
+  const p1Pct = Math.round((p1Checked / DOCS_PAGO1.length) * 100);
+  const p1Color = p1Pct === 100 ? 'complete' : p1Pct > 0 ? 'partial' : 'empty';
+
+  const p2Checked = DOCS_PAGO2.filter(d => oppDocs.pago2 && oppDocs.pago2[d]).length;
+  const p2Pct = Math.round((p2Checked / DOCS_PAGO2.length) * 100);
+  const p2Color = p2Pct === 100 ? 'complete' : p2Pct > 0 ? 'partial' : 'empty';
+
+  let html = `<h3><span class="doc-icon">&#128196;</span> Documentación Requerida</h3>`;
+
+  // Pago 1
+  html += `<div class="docs-group">
+    <div class="docs-group-title">1er Pago — Documentos Faltantes</div>`;
+  DOCS_PAGO1.forEach(doc => {
+    const checked = oppDocs.pago1 && oppDocs.pago1[doc] ? true : false;
+    html += `<div class="doc-row">
+      <input type="checkbox" id="p1_${doc}" ${checked ? 'checked' : ''} onchange="toggleDoc('pago1','${doc}', this.checked)">
+      <label for="p1_${doc}" class="${checked ? 'checked' : ''}">${doc}</label>
+    </div>`;
+  });
+  html += `<div class="doc-progress">
+    <div class="doc-progress-bar"><div class="doc-progress-fill ${p1Color}" style="width:${p1Pct}%"></div></div>
+    <span>${p1Checked}/${DOCS_PAGO1.length}</span>
+  </div></div>`;
+
+  // Toggle for 2do pago
+  html += `<div class="docs-group">
+    <div class="docs-group-title" style="display:flex;align-items:center;justify-content:space-between;">
+      2do Pago — Documentos Faltantes
+      <label style="font-size:11px;text-transform:none;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;">
+        <input type="checkbox" id="togglePago2" ${oppDocs.requierePago2 ? 'checked' : ''} onchange="togglePago2(this.checked)"> Aplica 2do pago
+      </label>
+    </div>`;
+
+  if (oppDocs.requierePago2) {
+    DOCS_PAGO2.forEach(doc => {
+      const checked = oppDocs.pago2 && oppDocs.pago2[doc] ? true : false;
+      html += `<div class="doc-row">
+        <input type="checkbox" id="p2_${doc}" ${checked ? 'checked' : ''} onchange="toggleDoc('pago2','${doc}', this.checked)">
+        <label for="p2_${doc}" class="${checked ? 'checked' : ''}">${doc}</label>
+      </div>`;
+    });
+    html += `<div class="doc-progress">
+      <div class="doc-progress-bar"><div class="doc-progress-fill ${p2Color}" style="width:${p2Pct}%"></div></div>
+      <span>${p2Checked}/${DOCS_PAGO2.length}</span>
+    </div>`;
+  } else {
+    html += `<div style="color:#9ca3af;font-size:12px;padding:8px 0;">No aplica segundo pago para esta oportunidad</div>`;
+  }
+  html += `</div>`;
+
+  docsDiv.innerHTML = html;
+}
+
+async function toggleDoc(pago, docName, checked) {
+  if (!selectedOpp) return;
+  if (!documents[selectedOpp.id]) documents[selectedOpp.id] = { pago1: {}, pago2: {}, requierePago2: false };
+  if (!documents[selectedOpp.id][pago]) documents[selectedOpp.id][pago] = {};
+  documents[selectedOpp.id][pago][docName] = checked;
+  await saveDocuments();
+  renderDocuments();
+  renderTable();
+}
+
+async function togglePago2(checked) {
+  if (!selectedOpp) return;
+  if (!documents[selectedOpp.id]) documents[selectedOpp.id] = { pago1: {}, pago2: {}, requierePago2: false };
+  documents[selectedOpp.id].requierePago2 = checked;
+  await saveDocuments();
+  renderDocuments();
+}
+
+async function saveDocuments() {
+  if (!selectedOpp) return;
+  try {
+    await fetch(`/api/documents/${selectedOpp.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documents: documents[selectedOpp.id] })
+    });
+  } catch (err) {
+    showToast('Error al guardar documentos');
+  }
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+  selectedOpp = null;
+  renderTable();
+}
+
+document.getElementById('panelClose').addEventListener('click', closePanel);
+document.getElementById('overlay').addEventListener('click', closePanel);
+
+function renderComments() {
+  const area = document.getElementById('commentsArea');
+  const comments = feedback[selectedOpp.id] || [];
+  if (comments.length === 0) {
+    area.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px 0;">Sin comentarios aún. Sé el primero en comentar.</div>';
+    return;
+  }
+  area.innerHTML = comments.map(c => {
+    const date = new Date(c.timestamp);
+    const dateStr = date.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return `<div class="comment ${c.role}">
+      <div class="comment-meta">
+        <span class="comment-role ${c.role}">${c.role === 'kavak' ? 'Kavak' : 'Plasencia'}</span>
+        <span>${dateStr}</span>
+      </div>
+      <div class="comment-text">${esc(c.comment)}</div>
+    </div>`;
+  }).join('');
+  area.scrollTop = area.scrollHeight;
+}
+
+// Send comment
+async function sendComment() {
+  const input = document.getElementById('commentInput');
+  const text = input.value.trim();
+  if (!text || !selectedOpp) return;
+
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ opportunityId: selectedOpp.id, role: ROLE, comment: text })
+    });
+    const json = await res.json();
+    if (json.ok) {
+      if (!feedback[selectedOpp.id]) feedback[selectedOpp.id] = [];
+      feedback[selectedOpp.id].push({ role: ROLE, comment: text, timestamp: new Date().toISOString() });
+      input.value = '';
+      renderComments();
+      renderTable();
+    }
+  } catch (err) {
+    showToast('Error al enviar comentario');
+  }
+}
+
+document.getElementById('commentBtn').addEventListener('click', sendComment);
+document.getElementById('commentInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendComment();
+});
+
+// Status change (kavak only)
+document.getElementById('panelStatus').addEventListener('change', async function() {
+  if (ROLE !== 'kavak' || !selectedOpp) return;
+  try {
+    const res = await fetch(`/api/status/${selectedOpp.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estatus: this.value })
+    });
+    const json = await res.json();
+    if (json.ok) {
+      selectedOpp.estatus = this.value;
+      renderTable();
+      showToast('Estatus actualizado');
+    }
+  } catch (err) {
+    showToast('Error al actualizar estatus');
+  }
+});
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Load on start
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "redshift": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub",
+        "--dsn",
+        "postgresql://TU_USUARIO:TU_PASSWORD@localhost:5439/dev"
+      ]
+    }
+  }
+}

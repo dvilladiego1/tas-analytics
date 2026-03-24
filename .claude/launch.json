@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "best-day",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "8765", "."],
+      "port": 8765
+    },
+    {
+      "name": "weekly-review",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "8766", "/Users/danielvilladiego/Downloads"],
+      "port": 8766
+    }
+  ]
+}
