@@ -118,7 +118,16 @@
       "Bash(ls -la ~/Downloads/\"Liquidity BP 2026\"*.csv)",
       "Bash(git init:*)",
       "Bash(git rm:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(/opt/homebrew/bin/brew --version)",
+      "Bash(/usr/local/bin/brew --version)",
+      "Bash(export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\")",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(mdfind -name gh -onlyin /opt/homebrew/bin)",
+      "Bash(mdfind -name gh -onlyin /usr/local/bin)",
+      "Read(//opt/**)",
+      "Bash(git remote:*)"
     ]
   }
 }

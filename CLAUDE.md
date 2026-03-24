@@ -9,9 +9,13 @@
 - Definitive deck template: `/Users/danielvilladiego/Downloads/Kia Coapa Review Feb 2026.pptx`
 
 ### Data Sources
-- **CSV Snapshot**: `Summary MKP _ TAS & BULK - Snapshot_Diario (1).csv` in Downloads
+- **CSV Snapshot**: `Summary MKP _ TAS & BULK - Snapshot_Diario (N).csv` in Downloads (N increments; latest = 8)
 - **Excel per cell**: `TAS_Continental_-_{Celula}_2026-{MM}.xlsx` in Downloads
 - **Excel all cells**: `TAS_Continental_ALL.xlsx` in Downloads
+- **Retail Supply CSV**: `MX KPIS [Oficial] - DB Supply (1).csv` in Downloads
+  - Multi-block horizontal structure (5 blocks side-by-side, each with own date+region columns)
+  - Column indices: registros_exitosos=3, schedule_confirmed=18, inspection_made=27, inspection_approved=38, net_purchases_retail=47
+  - Filter `region="All"` for national totals. Daily aggregated (1 row per date+region).
 
 ### CSV Column Mapping
 - Cell filter: column `Célula` (e.g., "CONTINENTAL COAPA", "ALIADO COAPA", "ALIADO TLAHUAC")
@@ -40,6 +44,16 @@
 | Plasencia | Grupo = 'GRUPO PLASENCIA' | — | 100% TAS, ~14 agencias GDL |
 | Premier | Grupo = 'GRUPO PREMIER' | — | 100% TAS, 3 células (Culiacán/Mazatlán/Hermosillo), Sinaloa/Sonora |
 | Ismo | Grupo LIKE 'GRUPO ISMO%' | ALIADO LEON | TAS 3 células (Tlalnepantla/León/AGS) + Aliado León (OMODA) |
+| Andrade | GRUPO ANDRADE | — | 100% TAS, 3 células (Aeropuerto/Azcapotzalco/Cuautitlán), CDMX |
+| Soni | GRUPO SONI | — | 100% TAS, 2 células (Pachuca/Querétaro) |
+| Potosina | GRUPO POTOSINA | — | 100% TAS, SLP. Override channel to TAS always |
+| Wecars | GRUPO WECARS | — | MTY area |
+| Autopolis | GRUPO AUTOPOLIS | — | MTY area |
+| GP Auto | GRUPO GP AUTO | — | 1 célula |
+| Misol | GRUPO MISOL | — | MTY area |
+| Mega | — | ALIADO MEGA | Aliado only |
+| Torres Corzo | — | ALIADO TORRES CORZO | Aliado, SLP area |
+| Tollocan | — | ALIADO TOLLOCAN | Aliado, EdoMex |
 
 ### PPTX Design System (from definitive deck)
 - **Slide size**: 13.333" x 7.500"
@@ -72,6 +86,13 @@ When Daniel asks to generate an MBR for a new cell, use:
 5. Generate all slides following the design system above
 6. Save to Downloads as `{Cell}_MBR_{Month}_{Year}.pptx`
 
+### Scripts
+- `gen_weekly_w12.py` — Weekly consolidated HTML report (5 tabs). Core data functions: `load_csv()`, `aggregate()`, `rr_7d()`.
+- `gen_plan_mejora_abril.py` — Plan de Mejora Abril 2026 PPTX (8 slides, Retail vs TAS vs Aliado comparison + impact matrices)
+- `build_mbr.py` — Monthly Business Review PPTX generator (per-cell). PPTX helper functions: `add_kpi_card()`, `add_insight_box()`, etc.
+- `gen_premier_review.py` — Grupo Premier review generator
+- `generate_sop_deck.py` — S&OP resource justification deck
+
 ### Dependencies
 ```
 pip install python-pptx pandas openpyxl
@@ -99,8 +120,14 @@ A purchase belongs to the month of its `purchase_date`, regardless of when the q
 When filtering purchases, always use the `purchased` flag field — never use `purchase_date` for filtering as it is mostly unpopulated and produces incorrect results. Use `purchase_date` only for grouping already-filtered purchases by month.
 
 ### Data Source Selection
-- **Months before March 2026**: Use CSV Snapshot (`Summary MKP _ TAS & BULK - Snapshot_Diario (1).csv`)
-- **March 2026 onward**: Use Excel files (`TAS_Continental_ALL.xlsx` or per-cell Excel)
+- **TAS funnel data**: Use latest CSV Snapshot (`Snapshot_Diario (N).csv`). CSV8 covers through Mar 22, 2026.
+- **Per-cell Excel**: Use when CSV Snapshot doesn't have the latest data or for cell-specific deep dives.
+- **Retail benchmarks**: Use `MX KPIS [Oficial] - DB Supply (1).csv` — has data back to Jan 2025.
+
+### Channel Overrides (applied in code)
+- GRUPO POTOSINA: Always force channel = 'TAS' (CSV sometimes says ALIADO)
+- ANDRADE AEROPUERTO: Force channel = 'TAS' when CSV says ALIADO
+- SONI PACHUCA: Force channel = 'TAS' when CSV says ALIADO
 
 ---
 
@@ -119,6 +146,19 @@ When filtering purchases, always use the `purchased` flag field — never use `p
 | Channel mix | TAS vs Aliado share | Channel purchases / Total purchases × 100 |
 
 **Important**: Always confirm KPI definitions with the user before generating evaluation or review documents. Supply Agents are measured by A→P%, not M→A%.
+
+### Retail vs TAS Funnel Equivalence
+| TAS Stage | Retail Equivalent | Comparable Rate |
+|---|---|---|
+| Quote (Q) | Schedule Confirmed | Retail S→M% ≈ TAS Q→M% |
+| Made (M) | Inspection Made | Same |
+| Approved (A) | Inspection Approved | Same |
+| Purchased (P) | Net Purchases Retail | Same |
+
+When comparing funnels, use Retail **S→M%** (Schedule-to-Made) as the equivalent of TAS **Q→M%** (Quote-to-Made). Both measure how many scheduled appointments become completed inspections.
+
+### MTD Comparison Rule
+When comparing Mar MTD vs Feb MTD, use same-period (same number of business days) to make volumes comparable. E.g., Mar 1-21 (~17 biz days) vs Feb 1-20 (~17 biz days). Conversion rates can use full-month data.
 
 ---
 
